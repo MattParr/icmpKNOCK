@@ -10,7 +10,7 @@ Copyright (C) 2009-2010 by Victor Dorneanu
 """
 
 import ConfigParser
-from modules.Utils import *
+from helpers import show_debug_msg,whoami
 
 # Define here which options actions _must_ have
 sections = {"action" : ["keys", "payload"]}
@@ -44,7 +44,7 @@ class ActionsReader:
                     
                     # Debug
                     if self.opts['debug']:
-                        Utils.show_debug_msg(Utils.whoami(self), "\tFound action: %s" % s)
+                        show_debug_msg(whoami(self), "\tFound action: %s" % s)
 
             res[s] = opts
                     
@@ -64,4 +64,5 @@ class ActionsReader:
 
         return actions
 
-# EOF
+class Action(object):
+    pass

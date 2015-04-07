@@ -10,7 +10,7 @@ Copyright (C) 2009-2010 by Victor Dorneanu
 """
 
 import ConfigParser
-from modules.Utils import *
+from helpers import show_debug_msg,whoami
 
 g_section = 'general'
 
@@ -36,11 +36,11 @@ class ConfReader:
         opts = self.config.options(g_section)
 
         for o in opts:
-           res[o] = self.config.get(g_section, o)
-           
-           # Debug
-           if self.opts['debug']:
-               Utils.show_debug_msg(Utils.whoami(self), "\tFound option: %s" % o) 
+            res[o] = self.config.get(g_section, o)
+            # Debug
+            if self.opts['debug']:
+                show_debug_msg(whoami(self), "\tFound option: %s" % o) 
 
         return res
-# EOF
+
+

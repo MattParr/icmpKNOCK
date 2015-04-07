@@ -20,16 +20,13 @@ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 """
 
-import socket
-import time
-import datetime
 import sys
 import os
 import getopt
-from modules import Listener
-from modules.ActionsReader import *
-from modules.ConfReader import *
-from modules.Utils import *
+from knocker.listener import ICMPListener
+from knocker.actions import ActionsReader
+from knocker.config import ConfReader
+from knocker.helpers import show_debug_msg,whoami
 
 # Default configuration file
 config_file = "conf/icmpKNOCK.conf"
@@ -99,14 +96,14 @@ if __name__ == '__main__':
 
         # Read config file
         if g_options['debug']:
-            Utils.show_debug_msg(Utils.whoami(), "Reading conf file %s" % g_options['config'])
+            show_debug_msg(whoami(), "Reading conf file %s" % g_options['config'])
 
         conf = ConfReader(g_options['config'], g_options)
         conf_opts = conf.read_conf()
 
         # Read actions file
         if g_options['debug']:
-            Utils.show_debug_msg(Utils.whoami(), "Reading actions file %s" % g_options['actions'])
+            show_debug_msg(whoami(), "Reading actions file %s" % g_options['actions'])
 
         acts = ActionsReader(g_options['actions'], g_options)
         actions = acts.clean_actions(acts.read_actions())
@@ -116,7 +113,7 @@ if __name__ == '__main__':
             
             # Debug
             if g_options['debug']:
-                Utils.show_debug_msg(Utils.whoami(), "Create new child process and become a daemon")
+                show_debug_msg(whoami(), "Create new child process and become a daemon")
 
             pid = os.fork()
             if pid > 0:
@@ -125,19 +122,18 @@ if __name__ == '__main__':
 
 
         # Activate ICMP listener
-        listener = Listener.ICMPListener(actions, conf_opts, g_options)
+        listener = ICMPListener(actions, conf_opts, g_options)
         listener.go()
 
-    except getopt.GetoptError, e:
+    except getopt.GetoptError as e:
         usage()
         print str(e)
         sys.exit(1)
 
-    except OSError, e: 
+    except OSError as e: 
         print >>sys.stderr, "fork failed: %d (%s)" % (e.errno, e.strerror) 
         sys.exit(1)
 
     except KeyboardInterrupt:
         exit('Aborting...')
 
-# EOF

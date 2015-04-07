@@ -11,11 +11,10 @@ Copyright (C) 2009-2010 by Victor Dorneanu
 
 import socket
 import time
-import datetime
-import sys
 import string
 import os
-from modules.Utils import *
+from helpers import show_debug_msg,whoami
+from actions import Action
 
 # --- Listen for ICMP packets 
 class ICMPListener(object):
@@ -60,7 +59,7 @@ class ICMPListener(object):
         # TODO: if id != 0 then exit
         # Debug
         if self.g_opts['debug']:
-            Utils.show_debug_msg(Utils.whoami(self), "Creating listening socket (AF_INET, SOCK_RAW, IPPROTO_ICMP)")
+            show_debug_msg(whoami(self), "Creating listening socket (AF_INET, SOCK_RAW, IPPROTO_ICMP)")
 
         self.sock = socket.socket(
             socket.AF_INET, socket.SOCK_RAW, socket.IPPROTO_ICMP)
@@ -73,26 +72,32 @@ class ICMPListener(object):
 
         # Debug
         if self.g_opts['debug']:
-            Utils.show_debug_msg(Utils.whoami(self), "Listening for incomming packets ...")
+            show_debug_msg(whoami(self), "Listening for incoming packets ...")
 
         while True:
             try:
                 data = self.sock.recv(1024)
-            except socket.error, e:
+            except socket.error:
                 print "Can't receive packet"
                 raise
           
             # Debug
             if self.g_opts['debug']:
-                Utils.show_debug_msg(Utils.whoami(self), "Packet received! Length: %s" % str(len(data)))
+                show_debug_msg(whoami(self), "Packet received! Length: %s" % str(len(data)))
 
-            self.check_packet(self.parse_packet(data))
+            self.check_packet(data)
 
 
 
-    def check_packet(self, value):
-        """ Check if packet contains our keys """
+    def check_packet(self, data):
+        """ 
+        Check if packet contains our keys 
         
+        """
+        
+        value = self.parse_packet(data)
+        packet_details = dict()
+        packet_details['IP_Address']=None
         # Check for knock delay 
         now = time.time()
         
@@ -114,7 +119,7 @@ class ICMPListener(object):
                         self.pattern_seq.append(j)
                         # Debug
                         if self.g_opts['debug']:
-                            Utils.show_debug_msg(Utils.whoami(self), "\n\t Storing seq <%s>" % j)   
+                            show_debug_msg(whoami(self), "\n\t Storing seq <%s>" % j)   
 
             try:
                 # Check if current key sequence has action (call payload)
@@ -125,10 +130,13 @@ class ICMPListener(object):
 
                     # Debug
                     if self.g_opts['debug']:
-                        Utils.show_debug_msg(Utils.whoami(self), "Found complete key(s) sequence!")
-                        Utils.show_debug_msg(Utils.whoami(self), "Executing: %s" % self.payloads[seq_key])
-
-                    os.system(self.payloads[seq_key])
+                        show_debug_msg(whoami(self), "Found complete key(s) sequence!")
+                        show_debug_msg(whoami(self), "Executing: %s" % self.payloads[seq_key])
+                    
+                    payload = self.payloads[seq_key]
+                    if type(payload) == Action:
+                        payload.called(packet_details)
+                    os.system()
                    
                     # Flush list of received packets
                     del self.pattern_seq[:]
@@ -142,13 +150,13 @@ class ICMPListener(object):
     def parse_packet(self, data):
         """ Parse packet and return HEX string """
 
-        # Split packet into IP header and data (RFC 791)
-        ip_header, ip_data = data[:20], data[20:]
-
-        # Split IP data into ICMP header and ICMP data (RFC 792)
-        icmp_header, icmp_payload = ip_data[:8], ip_data[8:]
+        # Split packet into IP header and data (RFC 791) (starts at 20)
+        # Split IP data into ICMP header and ICMP data (RFC 792) (starts at 20, goes for 8 - for our data)
+        icmp_payload = data[20:28]
 
         # Return payload data as hex string representation
         return ''.join( [ "%02x" % ord( x ) for x in icmp_payload ] ).strip()
 
 
+    def register_action(self,action):
+         
