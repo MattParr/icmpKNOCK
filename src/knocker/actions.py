@@ -1,68 +1,37 @@
 """
- (_) ___ _ __ ___  _ __ | |/ / \ | |/ _ \ / ___| |/ /   
- | |/ __| '_ ` _ \| '_ \| ' /|  \| | | | | |   | ' /    
- | | (__| | | | | | |_) | . \| |\  | |_| | |___| . \    
- |_|\___|_| |_| |_| .__/|_|\_\_| \_|\___/ \____|_|\_\   
-                  |_| (c) by Victor Dorneanu
-
-icmpKNOCK - ICMP port knocking server
-Copyright (C) 2009-2010 by Victor Dorneanu
+Actions are passed to the ICMPknock instance to define 
+sequences and the action to complete after that sequence.
 """
 
-import ConfigParser
-from helpers import show_debug_msg,whoami
+import logging
+from helpers import standard_knock_check
 
-# Define here which options actions _must_ have
-sections = {"action" : ["keys", "payload"]}
-
-class ActionsReader:
-    def __init__(self, filepath, opts):
-        """
-            Read actions file
-            and return options
-        """
-        self.config = ConfigParser.RawConfigParser()
-        self.filepath = filepath
-        self.opts = opts
-
-
-
-    def read_actions(self):
-        """ Read config file and check options """
-        res = {}
-
-        self.config.read(self.filepath)
-
-        # Check if actions were defined in the configuration file
-        for s in self.config.sections():
-           
-            # Check if action has specified options
-            opts = {}
-            for o in sections["action"]:
-                if self.config.has_option(s, o):
-                    opts[o] = self.config.get(s, o)
-                    
-                    # Debug
-                    if self.opts['debug']:
-                        show_debug_msg(whoami(self), "\tFound action: %s" % s)
-
-            res[s] = opts
-                    
-
-        # Return map including actions and options
-        return res
-
-
-
-    def clean_actions(self, actions):
-        """ Clean/sanitize actions options """
-        for a in actions:
-            # Remove any newline characters in <keys>
-            keys = actions[a]['keys']
-            keys = keys.replace("\n","")
-            actions[a]['keys'] = keys
-
-        return actions
+logger = logging.getLogger(__name__)
 
 class Action(object):
-    pass
+    #:type: set
+    sequence = None
+    # action function
+    action = None
+    # friendly name (logger)
+    name = None
+    
+    
+    def __init__(self,**kwargs):
+        self.action = kwargs.get('action')
+        self.sequence = kwargs.get('sequence')
+        self.name = kwargs.get('name')
+        if self.name:
+            self.__name__ = self.name 
+    
+    
+    def knock(self,ip_address,knocks):
+        """
+        Checks the incoming knocks against the sequence
+        If they match, executes the action.
+        """
+        if standard_knock_check(knocks):
+            logger.info('opening door for {}'.format(ip_address))
+            self.action(ip_address)
+            
+            

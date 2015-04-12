@@ -19,121 +19,34 @@ but WITHOUT ANY WARRANTY; without even the implied warranty of
 MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 GNU General Public License for more details.
 """
-
-import sys
-import os
-import getopt
+import logging
 from knocker.listener import ICMPListener
-from knocker.actions import ActionsReader
-from knocker.config import ConfReader
-from knocker.helpers import show_debug_msg,whoami
+from knocker.actions import Action
 
-# Default configuration file
-config_file = "conf/icmpKNOCK.conf"
-
-# Default actions file
-actions_file = "conf/actions.conf"
-
-# Global options
-g_options = { 'daemon'  : True,
-              'debug'   : False, 
-              'config'  : config_file,
-              'actions' : actions_file
-            }
+logging.basicConfig()
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
 
 
-# --- Main procedure
 if __name__ == '__main__':
-   
-    # Print usage menu
-    def usage():
-        banner = "                                             \
-        \n(_) ___ _ __ ___  _ __ | |/ / \ | |/ _ \ / ___| |/ / \
-        \n| |/ __| '_ ` _ \| '_ \| ' /|  \| | | | | |   | ' /  \
-        \n| | (__| | | | | | |_) | . \| |\  | |_| | |___| . \  \
-        \n|_|\___|_| |_| |_| .__/|_|\_\_| \_|\___/ \____|_|\_\ \
-        \n                 |_|     v0.2 (c) by Victor Dorneanu \
-        \n                                                     \
-        \nUsage:                                               \
-        \n          -h  Show this help                         \
-        \n          -d  Enable debug messages                  \
-        \n          -f  Don't daemonize process                \
-        \n          -c  Specify general config file            \
-        \n              Default: %s                            \
-        \n                                                     \
-        \n          -a  Specify actions file (see README)      \
-        \n              Default %s                             \
-        \n                                                     \
-        " % (config_file, actions_file)
 
-        print banner
-
-    try:
-        
-        # Get command line arguments
-        opts, args = getopt.getopt(sys.argv[1:], "dfhvc:a:", ["help"])
-       
-        
-        for o, a in opts:
-            if o in ("-h", "--help"):        
-                usage()
-                sys.exit(1)
-
-            elif o == "-f":
-                g_options['daemon'] = False
-
-            elif o == "-d":                  
-                g_options['debug'] = True
+    log_action_secret = set( ('c7533ff6fabc19816a2d816941fa5f56',
+                              'fafe47632b2a5e0a8b5fe2e8406b970b',
+                              'f28dff849929fb5d43629328c23df1c1',
+                              'b96276ed3de61330494eb201a3cb7fa7') )
     
-            elif o == "-c":
-                g_options['config'] = a
-                
-            elif o == "-a":
-                g_options['actions'] = a
-
-            else:                            
-                pass
-
-        # Read config file
-        if g_options['debug']:
-            show_debug_msg(whoami(), "Reading conf file %s" % g_options['config'])
-
-        conf = ConfReader(g_options['config'], g_options)
-        conf_opts = conf.read_conf()
-
-        # Read actions file
-        if g_options['debug']:
-            show_debug_msg(whoami(), "Reading actions file %s" % g_options['actions'])
-
-        acts = ActionsReader(g_options['actions'], g_options)
-        actions = acts.clean_actions(acts.read_actions())
-      
-        # Daemonize process
-        if g_options['daemon']:
-            
-            # Debug
-            if g_options['debug']:
-                show_debug_msg(whoami(), "Create new child process and become a daemon")
-
-            pid = os.fork()
-            if pid > 0:
-                # exit first parent
-                sys.exit(1)
+    def log_action_open_door(ip_address):
+        """
+        The function executed when the sequence is found
+        """
+        logger.error('successful knock from IP:{}'.format(ip_address))
+        
+        
+    log_action = Action(sequence = log_action_secret,
+                        name = 'log_action',
+                        action = log_action_open_door)
 
 
-        # Activate ICMP listener
-        listener = ICMPListener(actions, conf_opts, g_options)
-        listener.go()
-
-    except getopt.GetoptError as e:
-        usage()
-        print str(e)
-        sys.exit(1)
-
-    except OSError as e: 
-        print >>sys.stderr, "fork failed: %d (%s)" % (e.errno, e.strerror) 
-        sys.exit(1)
-
-    except KeyboardInterrupt:
-        exit('Aborting...')
-
+    # Activate ICMP listener
+    listener = ICMPListener(actions=[log_action])
+    listener.go()
