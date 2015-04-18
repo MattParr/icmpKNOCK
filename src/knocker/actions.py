@@ -30,7 +30,8 @@ class Action(object):
         Checks the incoming knocks against the sequence
         If they match, executes the action.
         """
-        if standard_knock_check(knocks):
+        logger.debug('checking door code for ip:{} with knocks:{}'.format(ip_address,knocks))
+        if standard_knock_check(self.sequence,knocks):
             logger.info('opening door for {}'.format(ip_address))
             self.action(ip_address)
             

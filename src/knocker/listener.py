@@ -16,12 +16,15 @@ from helpers import get_packet_payload, get_packet_saddr
 
 logger = logging.getLogger(__name__)
 
+KNOCK_LENGTH = 16 # bytes
 # seconds to allow between knocks
 MAX_KNOCK_DELAY = 5
 # max number of knocks that can make up a knock code
 MAX_NUM_KNOCKS = 4
 # min number of knocks that can make up a knock code
 MIN_NUM_KNOCKS = 4
+# ignore localhost
+IGNORE_LOCALHOST = True
 
 # --- Listen for ICMP packets 
 class ICMPListener(object):
@@ -47,6 +50,9 @@ class ICMPListener(object):
 
     def go(self):
         """ Receive and process a requests """
+        # TODO: add a timer cycle to flush expired IPs every 
+        # 5 seconds (otherwise they are kept forever - the dict
+        # just keeps getting bigger) 
         logger.debug( "Listening for incoming packets ..." )
         while True:
             try:
@@ -59,7 +65,7 @@ class ICMPListener(object):
 
     def process_knock(self,payload,ip_address):
         # get the current knocks for this IP address
-        knocks = self.knocks.setdefault(ip_address,set())
+        knocks = self.knocks.setdefault(ip_address,list())
         # Check for knock delay 
         now = time.time()
         last_knock = self.knock_timer.get(ip_address,now)
@@ -67,14 +73,14 @@ class ICMPListener(object):
         if now > (last_knock + MAX_KNOCK_DELAY):
             # this knock becomes the first knock
             logger.debug('{} reset knocks: timer expired'.format(ip_address))
-            knocks.clear()
+            del knocks[:]
         # if adding this knock would take the IP_address over the knock limit
         # this knock becomes the first knock
         if len(knocks) == MAX_NUM_KNOCKS:
             logger.debug('{} reset knocks: max knock limit reached'.format(ip_address))
-            knocks.clear()
+            del knocks[:]
         # add this knock to the list
-        knocks.add(payload)
+        knocks.append(payload)
         # update the timer for this knock
         self.knock_timer[ip_address] = now
         # process the knocks
@@ -89,6 +95,9 @@ class ICMPListener(object):
         """
         payload = get_packet_payload(packet)
         ip_address = get_packet_saddr(packet)
+        if IGNORE_LOCALHOST and ip_address == '127.0.0.1':
+            logger.debug('Ignore Localhost Packet')
+            return
         logger.debug('packet payload:{}:{}'.format(ip_address,payload))
         self.process_knock(payload,ip_address)
             

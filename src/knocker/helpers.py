@@ -10,6 +10,7 @@ Copyright (C) 2009-2010 by Victor Dorneanu
 """
 from struct import unpack
 from socket import inet_ntoa
+import knocker.listener
 
 def get_packet_saddr(packet):
     """
@@ -18,7 +19,7 @@ def get_packet_saddr(packet):
     # Split packet into IP header and data (RFC 791) (ends at 20)
     # unpack the headers which gives src ip at index 8
     # unpack the binary representation to string
-    return inet_ntoa(unpack('!BBHHHBBH4s4s' , packet[0:20])[8])
+    return inet_ntoa(unpack('!BBHHHBBH4s4s' , packet[:20])[8])
     
     
 def get_packet_payload(data):
@@ -28,7 +29,7 @@ def get_packet_payload(data):
     # Split packet into IP header and data (RFC 791) (starts at 20)
     # Split IP data into ICMP header and ICMP data (RFC 792) (starts at 20, goes for 8 - for our data)
     # Return payload data as hex string representation
-    return ''.join( [ "%02x" % ord( x ) for x in data[20:28] ] ).strip()
+    return ''.join( [ "%02x" % ord( x ) for x in data[44:44+knocker.listener.KNOCK_LENGTH] ] ).strip()
 
 
 def standard_knock_check(codes,knocks):

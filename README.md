@@ -7,8 +7,7 @@ What's this about?lls
 ------------------
 
 If you're familiar with port knocking, you should know the basics and how this 
-technique basically works. If don't have a clue what I'm talking about, feel 
-free to have a look at the *Links* section.
+technique basically works.
 
 Most port knocking tools are listening for TCP or UDP packets to arrive on 
 specific ports in a specific order. icmpKNOCK is waiting for ICMP echo requests
@@ -21,8 +20,8 @@ standard ping tools, regardless of your operating system.
 
 How to use it
 -------------
-    a) Define some unique keys (MD5, SHA1 etc.)
-    b) Define actions (check out icmpKNOCK_actions.py)
+    a) Define some actions (check out icmpKNOCK.py for a sample action
+    b) Add actions to listener
     c) run icmpKNOCK.py as root!!! otherwise you won't be able to listen
        for incoming ICMP requests
     d) Using your ping utility you can pass hex patterns to the requests:

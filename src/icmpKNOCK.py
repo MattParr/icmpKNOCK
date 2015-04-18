@@ -30,10 +30,10 @@ logger.setLevel(logging.DEBUG)
 
 if __name__ == '__main__':
 
-    log_action_secret = set( ('c7533ff6fabc19816a2d816941fa5f56',
+    log_action_secret = [ 'c7533ff6fabc19816a2d816941fa5f56',
                               'fafe47632b2a5e0a8b5fe2e8406b970b',
                               'f28dff849929fb5d43629328c23df1c1',
-                              'b96276ed3de61330494eb201a3cb7fa7') )
+                              'b96276ed3de61330494eb201a3cb7fa7']
     
     def log_action_open_door(ip_address):
         """
